@@ -1,0 +1,11 @@
+/* Anda hanya perlu memastikan tailwind directives ada jika Anda tetap menggunakannya untuk utilitas lain */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font Geist (Opsional, jika ingin persis sama. Jika tidak, akan fallback ke Roboto) */
+body {
+  margin: 0;
+  padding: 0;
+  /* Background warna ditangani oleh MUI ThemeProvider */
+}

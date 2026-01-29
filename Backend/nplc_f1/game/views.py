@@ -10,7 +10,6 @@ from .models import *
 MIN_NUMBER = 3
 MAX_NUMBER = 9
 TOTAL_NUMBERS = 4
-TARGET = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
 
 # Available operation combinations from frontend
 OPERATIONS = [
@@ -38,7 +37,7 @@ def generate_solvable_puzzle():
     
     for attempt in range(max_attempts):
         # Pick a random target from the predefined list
-        target = random.choice(TARGET)
+        target = random.randint(21, 200)
         
         # Generate 4 random numbers in the original range
         numbers = random.sample(range(MIN_NUMBER, MAX_NUMBER + 1), TOTAL_NUMBERS)

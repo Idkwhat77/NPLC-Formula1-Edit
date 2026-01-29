@@ -43,6 +43,7 @@ export default function Game() {
   const [roundScore, setRoundScore] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [globalQuestion, setGlobalQuestion] = useState(1); // ADD THIS LINE!
 
   // State Gameplay
   const [score, setScore] = useState(0);
@@ -100,11 +101,11 @@ export default function Game() {
       return;
     }
     setScore(0);
-    setCurrentQuestion(1); // Start with question 1
-    startFirstRound();
+    setCurrentQuestion(1); // Reset to question 1 for this team
+    startFirstRound(globalQuestion); // Now this will work!
   };
 
-  const startFirstRound = async () => {
+  const startFirstRound = async (questionNum) => {
     setGameState("PLAYING");
     setTimeLeft(TIME_PER_QUESTION);
     setSlots([null, null, null, null]);
@@ -113,7 +114,7 @@ export default function Game() {
     setFeedback("");
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/game/start/');
+      const res = await fetch(`http://127.0.0.1:8000/api/game/start/?q=${questionNum}`);
       const data = await res.json();
       setTarget(data.target);
       setPoolNumbers(data.numbers.map((num, i) => ({ id: i, value: num, used: false })));
@@ -124,14 +125,17 @@ export default function Game() {
   };
 
   const startNewRound = async () => {
-    const nextQuestion = currentQuestion + 1;
-    
-    if (nextQuestion > MAX_QUESTIONS) {
-      finishGame();
+    if (currentQuestion >= MAX_QUESTIONS) {
+      // Show the final score modal instead of finishing immediately
+      setGameState("FINISHED");
       return;
     }
 
+    const nextQuestion = currentQuestion + 1;
+    const nextGlobalQuestion = globalQuestion + 1;
+  
     setCurrentQuestion(nextQuestion);
+    setGlobalQuestion(nextGlobalQuestion); // Increment global counter
     setGameState("PLAYING");
     setTimeLeft(TIME_PER_QUESTION);
     setSlots([null, null, null, null]);
@@ -140,7 +144,7 @@ export default function Game() {
     setFeedback("");
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/game/start/');
+      const res = await fetch(`http://127.0.0.1:8000/api/game/start/?q=${nextGlobalQuestion}`);
       const data = await res.json();
       setTarget(data.target);
       setPoolNumbers(data.numbers.map((num, i) => ({ id: i, value: num, used: false })));
@@ -156,8 +160,7 @@ export default function Game() {
   };
 
   const finishGame = async () => {
-    setGameState("FINISHED");
-
+    // Submit score
     try {
       await fetch('http://127.0.0.1:8000/api/game/submit/', {
         method: 'POST',
@@ -171,6 +174,18 @@ export default function Game() {
       console.error("Gagal save skor:", error);
       showToast("Gagal menyimpan skor ke server. Panggil panitia!", "error");
     }
+
+    // Increment globalQuestion for the next team (ADD THIS LINE!)
+    setGlobalQuestion(prev => prev + 1);
+
+    // Reset for next team but keep global question counter
+    setGameState("MENU");
+    setTeamName("");
+    setScore(0);
+    setCurrentQuestion(0);
+    setFeedback("");
+    setRoundScore(0);
+    showToast(`Skor tersimpan! Tim berikutnya silakan bermain.`, "success");
   };
 
   const handleRoundEnd = (points, msg) => {
@@ -379,9 +394,9 @@ export default function Game() {
           <Button
             fullWidth
             variant="outlined"
-            onClick={() => window.location.reload()}
+            onClick={finishGame}  // Change from window.location.reload() to finishGame
           >
-            Bermain Lagi
+            Selesai & Tim Berikutnya
           </Button>
         </DialogActions>
       </Dialog>

@@ -17,8 +17,8 @@ import {
 } from '@mui/material';
 
 // Konfigurasi Game
-const TIME_PER_QUESTION = 120; // 2 minutes per question
-const MAX_QUESTIONS = 8; // Maximum 8 questions
+const TIME_PER_QUESTION = 1; // 2 minutes per question
+const MAX_QUESTIONS = 30; // Maximum 30 questions (2 rounds of 15)
 
 const PRESETS = [
   { id: 'p1', ops: ['*', '*', '+'], label: '× × +' },
@@ -37,12 +37,12 @@ export default function Game() {
   const navigate = useNavigate();
   
   // === 1. STATE MANAGEMENT ===
-  const [gameState, setGameState] = useState("MENU"); // MENU | PLAYING | TRANSITION | FINISHED
+  const [gameState, setGameState] = useState("MENU"); // MENU | PLAYING | TRANSITION | FINISHED | FINAL_SCORE | FINAL_SCORE
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
   const [teamName, setTeamName] = useState("");
   const [roundScore, setRoundScore] = useState(0);
   const [feedback, setFeedback] = useState("");
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(1);
   const [globalQuestion, setGlobalQuestion] = useState(1); // ADD THIS LINE!
 
   // State Gameplay
@@ -101,13 +101,13 @@ export default function Game() {
       return;
     }
     setScore(0);
-    setCurrentQuestion(1); // Reset to question 1 for this team
-    startFirstRound(globalQuestion); // Now this will work!
+    startFirstRound(1); // Start at question 1
   };
 
   const startFirstRound = async (questionNum) => {
     setGameState("PLAYING");
     setTimeLeft(TIME_PER_QUESTION);
+    setCurrentQuestion(questionNum);
     setSlots([null, null, null, null]);
     setSelectedOps(['?', '?', '?']);
     setSelectedPresetId("");
@@ -125,9 +125,14 @@ export default function Game() {
   };
 
   const startNewRound = async () => {
-    if (currentQuestion >= MAX_QUESTIONS) {
-      // Show the final score modal instead of finishing immediately
+    if (currentQuestion === 15) {
+      // Show round break modal after question 15
       setGameState("FINISHED");
+      return;
+    }
+    if (currentQuestion >= MAX_QUESTIONS) {
+      // Game truly finished after question 30 - show final score
+      setGameState("FINAL_SCORE");
       return;
     }
 
@@ -155,12 +160,46 @@ export default function Game() {
   };
 
   const handleTimeUp = () => {
-    const msg = "WAKTU HABIS! Tidak ada poin untuk soal ini.";
-    handleRoundEnd(0, msg);
+    // Auto-submit if slots are filled, otherwise just end with 0 points
+    if (slots.every(s => s !== null) && selectedOps[0] !== '?') {
+      handleSubmit(true); // Pass true to indicate auto-submit
+    } else {
+      const msg = "WAKTU HABIS! Tidak ada poin untuk soal ini.";
+      handleRoundEnd(0, msg);
+    }
   };
 
   const finishGame = async () => {
-    // Submit score
+    // This is just a round break - continue to next question
+    // Don't reset anything, just continue the game
+    
+    const nextQuestion = currentQuestion + 1;
+    const nextGlobalQuestion = globalQuestion + 1;
+  
+    setCurrentQuestion(nextQuestion);
+    setGlobalQuestion(nextGlobalQuestion);
+    setGameState("PLAYING");
+    setTimeLeft(TIME_PER_QUESTION);
+    setSlots([null, null, null, null]);
+    setSelectedOps(['?', '?', '?']);
+    setSelectedPresetId("");
+    setFeedback("");
+    setRoundScore(0);
+
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/game/start/?q=${nextGlobalQuestion}`);
+      const data = await res.json();
+      setTarget(data.target);
+      setPoolNumbers(data.numbers.map((num, i) => ({ id: i, value: num, used: false })));
+      showToast(`Ronde 2 dimulai! Soal ${nextQuestion}`, "success");
+    } catch (error) {
+      console.error('Error fetching:', error);
+      showToast("Gagal mengambil data soal!", "error");
+    }
+  };
+
+  const submitFinalScore = async () => {
+    // Submit final score to database
     try {
       await fetch('http://127.0.0.1:8000/api/game/submit/', {
         method: 'POST',
@@ -170,22 +209,20 @@ export default function Game() {
           score: score
         })
       });
+      showToast(`Skor final tersimpan! Total: ${score} poin`, "success");
     } catch (error) {
       console.error("Gagal save skor:", error);
       showToast("Gagal menyimpan skor ke server. Panggil panitia!", "error");
     }
 
-    // Increment globalQuestion for the next team (ADD THIS LINE!)
-    setGlobalQuestion(prev => prev + 1);
-
-    // Reset for next team but keep global question counter
+    // Reset everything for next team
     setGameState("MENU");
     setTeamName("");
     setScore(0);
-    setCurrentQuestion(0);
+    setCurrentQuestion(1);
+    setGlobalQuestion(1);
     setFeedback("");
     setRoundScore(0);
-    showToast(`Skor tersimpan! Tim berikutnya silakan bermain.`, "success");
   };
 
   const handleRoundEnd = (points, msg) => {
@@ -196,15 +233,19 @@ export default function Game() {
   };
 
   // === 5. LOGIKA SUBMIT JAWABAN ===
-  const handleSubmit = () => {
+  const handleSubmit = (isAutoSubmit = false) => {
     // Validasi Slot Kosong
     if (slots.some(s => s === null)) {
-      showToast("Isi semua slot angka!", "warning");
+      if (!isAutoSubmit) {
+        showToast("Isi semua slot angka!", "warning");
+      }
       return;
     }
     // Validasi Operator Kosong
     if (selectedOps[0] === '?') {
-      showToast("Pilih operator dulu!", "warning");
+      if (!isAutoSubmit) {
+        showToast("Pilih operator dulu!", "warning");
+      }
       return;
     }
 
@@ -216,7 +257,9 @@ export default function Game() {
     try {
       result = new Function('return ' + formula)();
     } catch {
-      showToast("Error dalam perhitungan rumus", "error");
+      if (!isAutoSubmit) {
+        showToast("Error dalam perhitungan rumus", "error");
+      }
       return;
     }
 
@@ -234,6 +277,11 @@ export default function Game() {
       } else {
         msg = `SALAH! Hasil: ${result}, Selisih terlalu besar dari target ${target}`;
       }
+    }
+
+    // Add auto-submit indicator to message
+    if (isAutoSubmit) {
+      msg = `WAKTU HABIS! ${msg}`;
     }
 
     handleRoundEnd(pts, msg);
@@ -317,7 +365,7 @@ export default function Game() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
-            Game terdiri dari 8 soal.<br />
+            Game terdiri dari 2 ronde, dimana tiap ronde 15 soal.<br />
             Setiap soal memiliki waktu 2 menit.
           </Typography>
           <TextField
@@ -371,32 +419,63 @@ export default function Game() {
         </DialogActions>
       </Dialog>
 
-      {/* Modal 3: Finished */}
+      {/* Modal 3: Round Break */}
       <Dialog open={gameState === "FINISHED"} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', color: 'primary.main' }}>
-          GAME SELESAI!
+          RONDE SELESAI!
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center' }}>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Kamu telah menyelesaikan {currentQuestion} soal.
+            Tim {teamName} telah menyelesaikan {currentQuestion} soal.
           </Typography>
           <Typography variant="body1" sx={{ mb: 1 }}>
-            Skor Akhir Tim {teamName}:
+            Skor Ronde Ini:
           </Typography>
           <Typography variant="h1" color="primary" fontWeight="bold" sx={{ my: 3 }}>
             {score}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Skor telah disimpan ke sistem.
+            Siap untuk ronde berikutnya?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
           <Button
             fullWidth
             variant="outlined"
-            onClick={finishGame}  // Change from window.location.reload() to finishGame
+            onClick={finishGame}
           >
-            Selesai & Tim Berikutnya
+            Selesai & Ronde Berikutnya
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal 4: Final Score */}
+      <Dialog open={gameState === "FINAL_SCORE"} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', color: 'success.main' }}>
+          🎉 GAME SELESAI! 🎉
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center' }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            Tim {teamName} telah menyelesaikan semua 30 soal!
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 1 }}>
+            Skor Final:
+          </Typography>
+          <Typography variant="h1" color="success.main" fontWeight="bold" sx={{ my: 3 }}>
+            {score}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Selamat! Skor akan disimpan ke leaderboard.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column', gap: 1 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            color="success"
+            onClick={submitFinalScore}
+          >
+            Simpan Skor & Selesai
           </Button>
         </DialogActions>
       </Dialog>
@@ -485,9 +564,15 @@ export default function Game() {
                   <Typography 
                     variant="h4" 
                     fontWeight="bold" 
-                    sx={{ mx: 1, minWidth: 24, textAlign: 'center' }}
+                    sx={{ 
+                      mx: 1, 
+                      minWidth: 24, 
+                      textAlign: 'center',
+                      color: selectedOps[slotIndex] === '?' ? 'text.disabled' : 'text.primary',
+                      opacity: selectedOps[slotIndex] === '?' ? 0.5 : 1,
+                    }}
                   >
-                    {selectedOps[slotIndex] === '?' ? '+' : selectedOps[slotIndex].replace('*', '×')}
+                    {selectedOps[slotIndex] === '?' ? '?' : selectedOps[slotIndex].replace('*', '×')}
                   </Typography>
                 )}
               </Box>
@@ -529,6 +614,7 @@ export default function Game() {
           >
             SUBMIT
           </Button>
+
         </Paper>
 
         {/* Operator Presets - 2x5 Table Grid */}

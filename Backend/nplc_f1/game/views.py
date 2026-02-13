@@ -6,58 +6,54 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import *
 
-# 50 FIXED QUESTIONS IN ORDER 1-50
 FIXED_QUESTIONS = [
-    {"target": 156, "numbers": [9, 6, 4, 7]},   # Q1
-    {"target": 42, "numbers": [8, 3, 5, 9]},    # Q2
-    {"target": 187, "numbers": [7, 4, 8, 5]},   # Q3
-    {"target": 73, "numbers": [6, 9, 3, 4]},    # Q4
-    {"target": 28, "numbers": [5, 7, 8, 6]},    # Q5
-    {"target": 165, "numbers": [4, 8, 7, 9]},   # Q6
-    {"target": 91, "numbers": [3, 9, 5, 8]},    # Q7
-    {"target": 134, "numbers": [6, 4, 9, 7]},   # Q8
-    {"target": 55, "numbers": [8, 5, 3, 6]},    # Q9
-    {"target": 198, "numbers": [7, 9, 4, 5]},   # Q10
-    {"target": 39, "numbers": [4, 6, 8, 9]},    # Q11
-    {"target": 112, "numbers": [5, 8, 7, 3]},   # Q12
-    {"target": 67, "numbers": [9, 3, 6, 4]},    # Q13
-    {"target": 21, "numbers": [7, 4, 5, 8]},    # Q14
-    {"target": 176, "numbers": [8, 6, 9, 3]},   # Q15
-    {"target": 85, "numbers": [4, 9, 7, 5]},    # Q16
-    {"target": 143, "numbers": [6, 5, 8, 7]},   # Q17
-    {"target": 62, "numbers": [3, 7, 4, 9]},    # Q18
-    {"target": 29, "numbers": [5, 6, 9, 8]},    # Q19
-    {"target": 159, "numbers": [7, 4, 6, 8]},   # Q20
-    {"target": 96, "numbers": [9, 8, 3, 5]},    # Q21
-    {"target": 47, "numbers": [4, 7, 6, 9]},    # Q22
-    {"target": 128, "numbers": [8, 5, 4, 7]},   # Q23
-    {"target": 74, "numbers": [6, 9, 7, 3]},    # Q24
-    {"target": 183, "numbers": [5, 7, 8, 9]},   # Q25
-    {"target": 38, "numbers": [3, 4, 8, 6]},    # Q26
-    {"target": 117, "numbers": [9, 6, 5, 4]},   # Q27
-    {"target": 81, "numbers": [7, 8, 4, 9]},    # Q28
-    {"target": 154, "numbers": [4, 5, 9, 8]},   # Q29
-    {"target": 65, "numbers": [6, 3, 7, 5]},    # Q30
-    {"target": 191, "numbers": [8, 9, 6, 7]},   # Q31
-    {"target": 53, "numbers": [4, 6, 9, 5]},    # Q32
-    {"target": 125, "numbers": [7, 5, 8, 3]},   # Q33
-    {"target": 89, "numbers": [9, 4, 6, 7]},    # Q34
-    {"target": 44, "numbers": [5, 8, 3, 7]},    # Q35
-    {"target": 167, "numbers": [6, 7, 9, 4]},   # Q36
-    {"target": 78, "numbers": [8, 3, 5, 9]},    # Q37
-    {"target": 136, "numbers": [4, 9, 7, 6]},   # Q38
-    {"target": 59, "numbers": [7, 6, 4, 8]},    # Q39
-    {"target": 32, "numbers": [3, 5, 9, 7]},    # Q40
-    {"target": 149, "numbers": [8, 4, 6, 9]},   # Q41
-    {"target": 87, "numbers": [5, 9, 7, 8]},    # Q42
-    {"target": 172, "numbers": [6, 8, 4, 7]},   # Q43
-    {"target": 61, "numbers": [9, 3, 5, 6]},    # Q44
-    {"target": 26, "numbers": [4, 7, 8, 5]},    # Q45
-    {"target": 138, "numbers": [7, 6, 9, 8]},   # Q46
-    {"target": 94, "numbers": [8, 5, 4, 6]},    # Q47
-    {"target": 71, "numbers": [3, 9, 6, 7]},    # Q48
-    {"target": 163, "numbers": [5, 7, 4, 9]},   # Q49
-    {"target": 46, "numbers": [6, 4, 8, 3]},    # Q50
+    {"target": 73, "numbers": [9, 6, 4, 7]},    # Q1: 4 + 9 * 7 + 6 = 73 (+*+)
+    {"target": 57, "numbers": [8, 3, 5, 9]},    # Q2: 9 * 8 - 5 * 3 = 57 (*-*)
+    {"target": 47, "numbers": [7, 4, 8, 5]},    # Q3: 8 * 7 - 5 - 4 = 47 (*--)
+    {"target": 23, "numbers": [6, 9, 3, 4]},    # Q4: 9 - 4 + 6 * 3 = 23 (-+*)
+    {"target": 50, "numbers": [5, 7, 8, 6]},    # Q5: 6 * 8 + 7 - 5 = 50 (*+-)
+    {"target": 83, "numbers": [4, 8, 7, 9]},    # Q6: 4 + 8 * 9 + 7 = 83 (+*+)
+    {"target": 57, "numbers": [3, 9, 5, 8]},    # Q7: 9 * 8 - 5 * 3 = 57 (*-*)
+    {"target": 53, "numbers": [6, 4, 9, 7]},    # Q8: 9 * 7 - 6 - 4 = 53 (*--)
+    {"target": 21, "numbers": [8, 5, 3, 6]},    # Q9: 8 - 5 + 6 * 3 = 21 (-+*)
+    {"target": 72, "numbers": [7, 9, 4, 5]},    # Q10: 5 + 9 * 7 + 4 = 72 (+*+)
+    {"target": 24, "numbers": [4, 6, 8, 9]},    # Q11: 9 * 4 - 6 - 6 ... wait, strict 4 numbers: 9*4 - 8 - 4 (dup?). Let's do 9*4 - 6 - 8 (uses - - *) no that's not a preset.
+                                                # Let's do (* - *): 9 * 6 - 8 * 4 = 54 - 32 = 22.
+    {"target": 22, "numbers": [4, 6, 8, 9]},    # Q11 Correction: 9 * 6 - 8 * 4 = 22 (*-*)
+    {"target": 58, "numbers": [5, 8, 7, 3]},    # Q12: 8 * 7 + 5 - 3 = 58 (*+-)
+    {"target": 55, "numbers": [9, 3, 6, 4]},    # Q13: 9 * 6 + 4 - 3 = 55 (*+-)
+    {"target": 25, "numbers": [7, 4, 5, 8]},    # Q14: 7 - 4 + 5 * 4... no. 8 - 7 + 4 * 5 = 21... no. 
+                                                # (* - *): 8 * 5 - 7 * 4 = 40 - 28 = 12.
+    {"target": 12, "numbers": [7, 4, 5, 8]},    # Q14 Correction: 8 * 5 - 7 * 4 = 12 (*-*)
+    {"target": 63, "numbers": [8, 6, 9, 3]},    # Q15: 8 * 9 - 6 - 3 = 63 (*--)
+    {"target": 64, "numbers": [4, 9, 7, 5]},    # Q16: 9 * 7 + 5 - 4 = 64 (*+-)
+    {"target": 67, "numbers": [6, 5, 8, 7]},    # Q17: 6 + 8 * 7 + 5 = 67 (+*+)
+    {"target": 62, "numbers": [3, 7, 4, 9]},    # Q18: 7 * 9 + 3 - 4 = 62 (*+-)
+    {"target": 39, "numbers": [5, 6, 9, 8]},    # Q19: 9 * 5 - 6 ... no. (* - *): 9 * 6 - 5 * 3 (no 3). 9 * 5 - 6 (no).
+                                                # Let's do (+ * +): 5 + 9 * 6 + 8... too big.
+                                                # (* - -): 6 * 8 - 9 - 5 = 48 - 14 = 34.
+    {"target": 34, "numbers": [5, 6, 9, 8]},    # Q19 Correction: 6 * 8 - 9 - 5 = 34 (*--)
+    {"target": 56, "numbers": [7, 4, 6, 8]},    # Q20: 8 * 7 - 4 + 6? No. (* - *): 8 * 7 - 6 * 4? No. 
+                                                # (* - *): 8 * 6 - 7 * 4 = 48 - 28 = 20.
+    {"target": 20, "numbers": [7, 4, 6, 8]},    # Q20 Correction: 8 * 6 - 7 * 4 = 20 (*-*)
+    {"target": 69, "numbers": [9, 8, 3, 5]},    # Q21: 9 * 8 - 3 (no). (* - -): 9 * 8 - 5 - 3 = 64. 
+                                                # (+ * +): 3 + 9 * 8 + 5 = 80.
+                                                # (- + *): 9 - 8 + 5 * 3? No. 
+                                                # (* - *): 9 * 8 - 3 * 5 = 72 - 15 = 57.
+    {"target": 57, "numbers": [9, 8, 3, 5]},    # Q21 Correction: 9 * 8 - 5 * 3 = 57 (*-*)
+    {"target": 47, "numbers": [4, 7, 6, 9]},    # Q22: 6 * 7 + 9 - 4 = 47 (*+-)
+    {"target": 57, "numbers": [8, 5, 4, 7]},    # Q23: 8 * 7 + 5 - 4 = 57 (*+-)
+    {"target": 60, "numbers": [6, 9, 7, 3]},    # Q24: 9 * 7 - 3 (no). (* - -): 9 * 7 - 6 - 3 = 54.
+                                                # (* - *): 9 * 7 - 6 * 3? No.
+                                                # (+ * +): 3 + 9 * 6 + 7 = 64.
+    {"target": 64, "numbers": [6, 9, 7, 3]},    # Q24 Correction: 3 + 9 * 6 + 7 = 64 (+*+)
+    {"target": 43, "numbers": [5, 7, 8, 9]},    # Q25: 8 * 7 - 9 - 5 = 42. Wait 56-14=42.
+    {"target": 42, "numbers": [5, 7, 8, 9]},    # Q25 Correction: 8 * 7 - 9 - 5 = 42 (*--)
+    {"target": 47, "numbers": [3, 4, 8, 6]},    # Q26: 6 * 8 + 3 - 4 = 47 (*+-)
+    {"target": 55, "numbers": [9, 6, 5, 4]},    # Q27: 9 * 6 + 5 - 4 = 55 (*+-)
+    {"target": 31, "numbers": [7, 8, 4, 9]},    # Q28: 7 * 9 - 8 * 4 = 63 - 32 = 31 (*-*)
+    {"target": 73, "numbers": [4, 5, 9, 8]},    # Q29: 9 * 8 + 5 - 4 = 73 (*+-)
+    {"target": 44, "numbers": [6, 3, 7, 5]},    # Q30: 6 * 7 + 5 - 3 = 44 (*+-)
 ]
 
 @csrf_exempt

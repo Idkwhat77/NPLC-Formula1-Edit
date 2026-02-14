@@ -232,6 +232,20 @@ export default function Game() {
     setGameState("TRANSITION");
   };
 
+  const handleStop = () => {
+    if (currentQuestion <= 15) {
+      // Round 1: Skip to question 16 (round 2 start)
+      setCurrentQuestion(15);
+      setGlobalQuestion(15);
+      setRoundScore(0);
+      setFeedback("Ronde 1 dihentikan secara manual. Lanjut ke Ronde 2!");
+      setGameState("FINISHED");
+    } else {
+      // Round 2: Go directly to final score
+      setGameState("FINAL_SCORE");
+    }
+  };
+
   // === 5. LOGIKA SUBMIT JAWABAN ===
   const handleSubmit = (isAutoSubmit = false) => {
     // Validasi Slot Kosong
@@ -352,9 +366,21 @@ export default function Game() {
             variant="body1"
             fontWeight="bold"
             color={timeLeft <= 10 ? 'error' : 'text.primary'}
+            sx={{ mb: 1 }}
           >
             Sisa Waktu: {formatTime(timeLeft)}
           </Typography>
+          {gameState === "PLAYING" && (
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={handleStop}
+              sx={{ fontWeight: 'bold' }}
+            >
+              {currentQuestion <= 15 ? "STOP - RONDE 2" : "STOP - SELESAI"}
+            </Button>
+          )}
         </Box>
       </Box>
 

@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 
 // Konfigurasi Game
-const TIME_PER_QUESTION = 1; // 2 minutes per question
+const TIME_PER_QUESTION = 120; // 2 minutes per question
 const MAX_QUESTIONS = 30; // Maximum 30 questions (2 rounds of 15)
 
 const PRESETS = [
